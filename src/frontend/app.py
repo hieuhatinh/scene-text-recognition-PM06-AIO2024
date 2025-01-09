@@ -17,7 +17,17 @@ def process_image_upload(file_image, base_url):
         image = Image.open(io.BytesIO(response.content))
         return predictions, image
     except Exception as e:
-        print(e)
+        st.error(e)
+
+
+def process_image_url(url_image, base_url):
+    try:
+        response = requests.get(
+            f'{base_url}/ocr/url', params={'image_url': url_image})
+        predictions = response.headers.get('X-predictions', '[]')
+        image = Image.open(io.BytesIO(response.content))
+        return predictions, image
+    except Exception as e:
         st.error(e)
 
 
@@ -73,6 +83,35 @@ def main():
                             img_upload, base_url=base_url)
                         st.image(image, use_container_width=True)
                         st.code(format_predictions(predictions))
+
+    # get image from url
+    with tab2:
+        url = st.text_input('Enter URL image')
+        if url:
+            image = None
+            try:
+                response = requests.get(url)
+                image = Image.open(io.BytesIO(response.content))
+            except Exception as e:
+                st.error('Cannot load image from url')
+
+            if image:
+                process_button = st.button('Process Image')
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.subheader('Origin Image')
+                    st.image(image, use_container_width=True)
+
+                with col2:
+                    st.subheader('Processed Image')
+
+                    if process_button:
+                        with st.spinner('Đang xử lý...'):
+                            predictions, image = process_image_url(
+                                url, base_url=base_url)
+                            st.image(image, use_container_width=True)
+                            st.code(format_predictions(predictions))
 
 
 if __name__ == '__main__':

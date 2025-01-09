@@ -4,6 +4,7 @@ import io
 import os
 import tempfile
 from models.ocr import ocr_service
+import requests
 
 app = FastAPI()
 
@@ -60,4 +61,21 @@ async def ocr_upload(file: UploadFile = File(...)):
             status_code=500,
             detail=e
         )
-    # print(Image.open(io.BytesIO(file.file.read())))
+
+
+@ocr_router.get('/url/')
+async def ocr_img_url(image_url: str):
+    try:
+        response = requests.get(image_url)
+        predictions, file_stream = await process(response.content)
+        return Response(
+            content=file_stream.getvalue(),
+            media_type='image/png',
+            headers={'X-predictions': str(predictions)}
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=e
+        )
